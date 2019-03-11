@@ -1,5 +1,6 @@
 package DTAC.Helper;
 
+import java.awt.Color;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -13,6 +14,15 @@ import java.util.Scanner;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JTextPane;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
@@ -25,7 +35,7 @@ import com.healthmarketscience.jackcess.*;
 
 public class Dtac {
 
-	public static void main(String[] args) throws IOException, ZipException {
+	public void repair(StyledDocument doc, JButton btnDtac) throws IOException, ZipException, BadLocationException {
 
 		String exportFolder = (getExportFolder());
 
@@ -41,38 +51,49 @@ public class Dtac {
 
 		String[] cruFilesNames = cruFiles.list(filter);
 
-		checkCwuFiles(exportFolder, cruFilesNames);
-		
+		checkCwuFiles(exportFolder, cruFilesNames, doc, btnDtac);
+
 	}
 
-	private static void checkCwuFiles(String exportFolder, String[] cruFilesNames) throws ZipException, IOException {
+	private static void checkCwuFiles(String exportFolder, String[] cruFilesNames, StyledDocument doc, JButton btnDtac)
+			throws ZipException, IOException, BadLocationException {
+
+		JTextPane jtp = new JTextPane();
+		Style style = jtp.addStyle("Red coloured text", null);
+		StyleConstants.setForeground(style, Color.green);
+		StyleConstants.setAlignment(style, 1);
+		
+		btnDtac.setEnabled(false);
 		for (String fileName : cruFilesNames) {
-			
+
 			String databasePatch = unzipCruFile(new File(exportFolder + fileName));
-			
+			doc.insertString(doc.getLength(), "\n" + fileName, null);
+
 			boolean check = checkDatabase(databasePatch);
-			System.out.println(check);
-			
+			// System.out.println(check);
+
 			if (!check) {
-				
+				doc.insertString(doc.getLength(), "\nrepering..........", null);
 				repairDatabase(exportFolder, databasePatch);
-				
+				doc.insertString(doc.getLength(), "done", null);
+				doc.insertString(doc.getLength(), "          OK", style);
 			} else {
-				
-				FileUtils.deleteDirectory(new File(databasePatch));
-				System.out.println("jest ok");
+				doc.insertString(doc.getLength(), "          OK", style);
 			}
+			FileUtils.deleteDirectory(new File(databasePatch));
 		}
+		doc.insertString(doc.getLength(), "\nFINISHED", null);
+		btnDtac.setEnabled(true);
 	}
 
 	private static void repairDatabase(String exportFolder, String databasePatch) throws ZipException, IOException {
-		String newCwuFileName = zipFile(databasePatch);				
+		
+		String newCwuFileName = zipFile(databasePatch);
 
 		changeExtension(new File(newCwuFileName), "cwu");
 
 		FileUtils.copyFileToDirectory(new File(newCwuFileName.replace(".zip", ".cwu")), new File(exportFolder));
-
-		System.out.println("naprawiono");
+		
 	}
 
 	public static String zipFile(String databasePatch) throws ZipException {
@@ -145,4 +166,5 @@ public class Dtac {
 
 		return result;
 	}
+
 }
