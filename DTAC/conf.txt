@@ -1,1 +1,1 @@
-exportFolder=C:\Dtac\Export\
+exportFolder=C:\tools\deere\Across\Dtac\Export

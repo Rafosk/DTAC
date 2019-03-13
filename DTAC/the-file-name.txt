@@ -1,0 +1,5 @@
+The first line
+The second line
+the text
+	the text
+koniec\nkoniec\nkoniec\nkoniec\nkoniec\nkoniec\nkoniec\nkoniec\nkoniec\nkoniec\nkoniec\nkoniec\nkoniec\nkoniec\nkoniec\nkoniec\nkoniec\nkoniec\nkoniec\n

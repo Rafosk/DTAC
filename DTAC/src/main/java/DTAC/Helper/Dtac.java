@@ -6,7 +6,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -37,10 +41,22 @@ public class Dtac {
 
 	public void repair(StyledDocument doc, JButton btnDtac) throws IOException, ZipException, BadLocationException {
 
+		String logMessage = "";
+		PrintWriter writer = new PrintWriter("dtac.log", "UTF-8");
+
+		logMessage = "trying to get export folder\n";
+		log(logMessage);
+
 		String exportFolder = (getExportFolder());
 
+		logMessage = "the patch is: " + exportFolder + "\n"; 	
+		log(logMessage);
+		
 		File cruFiles = new File(exportFolder);
 
+		logMessage = "got cru files\n"; 	
+		log(logMessage);
+		
 		FilenameFilter filter = new FilenameFilter() {
 
 			@Override
@@ -51,10 +67,24 @@ public class Dtac {
 
 		String[] cruFilesNames = cruFiles.list(filter);
 
+		logMessage = "got cru names\n"; 	
+		log(logMessage);
+		
 		checkCwuFiles(exportFolder, cruFilesNames, doc, btnDtac);
-
+		logMessage = "did check\n"; 	
+		log(logMessage);
+		writer.close();
 	}
 
+	private void log(String message) throws IOException {
+		try {
+			Files.write(Paths.get("dtac.log"), message.getBytes(), StandardOpenOption.APPEND);
+		} catch (Exception e) {
+			String tmp = e.getMessage();
+			Files.write(Paths.get("dtac.log"), tmp.getBytes(), StandardOpenOption.APPEND);
+		}
+	}
+	
 	private static void checkCwuFiles(String exportFolder, String[] cruFilesNames, StyledDocument doc, JButton btnDtac)
 			throws ZipException, IOException, BadLocationException {
 
@@ -62,14 +92,16 @@ public class Dtac {
 		Style style = jtp.addStyle("Red coloured text", null);
 		StyleConstants.setForeground(style, Color.green);
 		StyleConstants.setAlignment(style, 1);
+		doc.insertString(doc.getLength(), "Start\n", null);
 		
 		btnDtac.setEnabled(false);
 		for (String fileName : cruFilesNames) {
 
-			String databasePatch = unzipCruFile(new File(exportFolder + fileName));
+			doc.insertString(doc.getLength(), "found: " + cruFilesNames.length + " files\n", null);
+			String databasePatch = unzipCruFile(new File(exportFolder + "\\" + fileName));
 			doc.insertString(doc.getLength(), "\n" + fileName, null);
 
-			boolean check = checkDatabase(databasePatch);
+			boolean check = checkDatabase(databasePatch,doc);
 			// System.out.println(check);
 
 			if (!check) {
@@ -83,17 +115,18 @@ public class Dtac {
 			FileUtils.deleteDirectory(new File(databasePatch));
 		}
 		doc.insertString(doc.getLength(), "\nFINISHED", null);
+		Files.write(Paths.get("the-file-name.txt"), "koniec\\n".getBytes(), StandardOpenOption.APPEND);
 		btnDtac.setEnabled(true);
 	}
 
 	private static void repairDatabase(String exportFolder, String databasePatch) throws ZipException, IOException {
-		
+
 		String newCwuFileName = zipFile(databasePatch);
 
 		changeExtension(new File(newCwuFileName), "cwu");
 
 		FileUtils.copyFileToDirectory(new File(newCwuFileName.replace(".zip", ".cwu")), new File(exportFolder));
-		
+
 	}
 
 	public static String zipFile(String databasePatch) throws ZipException {
@@ -145,21 +178,40 @@ public class Dtac {
 		return tmp.replace("\r\n", "");
 	}
 
-	public static boolean checkDatabase(String databasePatch) throws IOException {
+	public static boolean checkDatabase(String databasePatch, StyledDocument doc) throws IOException, BadLocationException {
 
 		// true - baza nie zawiera bledow
 		// false - baza z bledami, naprawiono
 
 		boolean result = true;
-
+		doc.insertString(doc.getLength(), "opening database\n", null);
 		Database db = DatabaseBuilder.open(new File(databasePatch + "\\unit.mdb"));
+		doc.insertString(doc.getLength(), "database opened\n", null);
 		Table table = db.getTable("Projects");
-
+		doc.insertString(doc.getLength(), "table opened\n", null);
+		int i = 0;
 		for (Row row : table) {
+			doc.insertString(doc.getLength(), "checking row: " + i + "\n" , null);	
 			if (row.containsValue("Mariusz Ziolkowski test prep")) {
-				table.deleteRow(row);
+				doc.insertString(doc.getLength(), "got error\n" , null);
+				try {
+					doc.insertString(doc.getLength(), row.toString()  + "\n" , null);
+					table.deleteRow(row);	
+				} catch (Exception e) {
+					doc.insertString(doc.getLength(), "error: " + e.getMessage() + "\n", null);
+				}
+				doc.insertString(doc.getLength(), "id wiersza: " + row.getId() + "\n", null);
+				
+				try {
+					doc.insertString(doc.getLength(), row.toString()  + "\n" , null);
+					table.deleteRow(row);	
+				} catch (Exception e) {
+					doc.insertString(doc.getLength(), "error2: " + e.getMessage() + "\n", null);
+				}
+				doc.insertString(doc.getLength(), "error fixed\n" , null);
 				result = false;
 			}
+			i++;
 		}
 
 		db.close();
