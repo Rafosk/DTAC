@@ -49,14 +49,14 @@ public class Dtac {
 
 		String exportFolder = (getExportFolder());
 
-		logMessage = "the patch is: " + exportFolder + "\n"; 	
+		logMessage = "the patch is: " + exportFolder + "\n";
 		log(logMessage);
-		
+
 		File cruFiles = new File(exportFolder);
 
-		logMessage = "got cru files\n"; 	
+		logMessage = "got cru files\n";
 		log(logMessage);
-		
+
 		FilenameFilter filter = new FilenameFilter() {
 
 			@Override
@@ -67,11 +67,11 @@ public class Dtac {
 
 		String[] cruFilesNames = cruFiles.list(filter);
 
-		logMessage = "got cru names\n"; 	
+		logMessage = "got cru names\n";
 		log(logMessage);
-		
+
 		checkCwuFiles(exportFolder, cruFilesNames, doc, btnDtac);
-		logMessage = "did check\n"; 	
+		logMessage = "checked\n";
 		log(logMessage);
 		writer.close();
 	}
@@ -84,7 +84,7 @@ public class Dtac {
 			Files.write(Paths.get("dtac.log"), tmp.getBytes(), StandardOpenOption.APPEND);
 		}
 	}
-	
+
 	private static void checkCwuFiles(String exportFolder, String[] cruFilesNames, StyledDocument doc, JButton btnDtac)
 			throws ZipException, IOException, BadLocationException {
 
@@ -93,15 +93,14 @@ public class Dtac {
 		StyleConstants.setForeground(style, Color.green);
 		StyleConstants.setAlignment(style, 1);
 		doc.insertString(doc.getLength(), "Start\n", null);
-		
+		doc.insertString(doc.getLength(), "found: " + cruFilesNames.length + " files\n", null);
 		btnDtac.setEnabled(false);
 		for (String fileName : cruFilesNames) {
-
-			doc.insertString(doc.getLength(), "found: " + cruFilesNames.length + " files\n", null);
+			
 			String databasePatch = unzipCruFile(new File(exportFolder + "\\" + fileName));
 			doc.insertString(doc.getLength(), "\n" + fileName, null);
 
-			boolean check = checkDatabase(databasePatch,doc);
+			boolean check = checkDatabase(databasePatch, doc);
 			// System.out.println(check);
 
 			if (!check) {
@@ -115,7 +114,7 @@ public class Dtac {
 			FileUtils.deleteDirectory(new File(databasePatch));
 		}
 		doc.insertString(doc.getLength(), "\nFINISHED", null);
-		Files.write(Paths.get("the-file-name.txt"), "koniec\\n".getBytes(), StandardOpenOption.APPEND);
+
 		btnDtac.setEnabled(true);
 	}
 
@@ -172,43 +171,34 @@ public class Dtac {
 
 	private static String getExportFolder() throws IOException {
 
-		String tmp = FileUtils.readFileToString(new File("conf.txt"), StandardCharsets.UTF_8);
+		String tmp = FileUtils.readFileToString(new File("conf.cfg"), StandardCharsets.UTF_8);
 		tmp = tmp.substring(tmp.indexOf("=") + 1).toString().replace("\\\\", "\\");
 
 		return tmp.replace("\r\n", "");
 	}
 
-	public static boolean checkDatabase(String databasePatch, StyledDocument doc) throws IOException, BadLocationException {
+	public static boolean checkDatabase(String databasePatch, StyledDocument doc)
+			throws IOException, BadLocationException {
 
 		// true - baza nie zawiera bledow
 		// false - baza z bledami, naprawiono
 
 		boolean result = true;
-		doc.insertString(doc.getLength(), "opening database\n", null);
+
 		Database db = DatabaseBuilder.open(new File(databasePatch + "\\unit.mdb"));
-		doc.insertString(doc.getLength(), "database opened\n", null);
+
 		Table table = db.getTable("Projects");
-		doc.insertString(doc.getLength(), "table opened\n", null);
+
 		int i = 0;
 		for (Row row : table) {
-			doc.insertString(doc.getLength(), "checking row: " + i + "\n" , null);	
+
 			if (row.containsValue("Mariusz Ziolkowski test prep")) {
-				doc.insertString(doc.getLength(), "got error\n" , null);
+				doc.insertString(doc.getLength(), " found error", null);
 				try {
-					doc.insertString(doc.getLength(), row.toString()  + "\n" , null);
-					table.deleteRow(row);	
+					table.deleteRow(row);
 				} catch (Exception e) {
-					doc.insertString(doc.getLength(), "error: " + e.getMessage() + "\n", null);
-				}
-				doc.insertString(doc.getLength(), "id wiersza: " + row.getId() + "\n", null);
-				
-				try {
-					doc.insertString(doc.getLength(), row.toString()  + "\n" , null);
-					table.deleteRow(row);	
-				} catch (Exception e) {
-					doc.insertString(doc.getLength(), "error2: " + e.getMessage() + "\n", null);
-				}
-				doc.insertString(doc.getLength(), "error fixed\n" , null);
+					doc.insertString(doc.getLength(), "\n error: " + e.getMessage() + "\n", null);
+				}				
 				result = false;
 			}
 			i++;
