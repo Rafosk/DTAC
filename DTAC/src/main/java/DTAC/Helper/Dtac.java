@@ -29,6 +29,7 @@ import javax.swing.text.StyledDocument;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.log4j.Logger;
 
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
@@ -39,6 +40,8 @@ import com.healthmarketscience.jackcess.*;
 
 public class Dtac {
 
+	static Logger log = Logger.getLogger(Dtac.class.getName());
+	
 	public void repair(StyledDocument doc, JButton btnDtac) throws IOException, ZipException, BadLocationException {
 
 		String logMessage = "";
@@ -67,7 +70,7 @@ public class Dtac {
 
 		String[] cruFilesNames = cruFiles.list(filter);
 
-		logMessage = "got cru names\n";
+		logMessage = "got cru dsanames\n";
 		log(logMessage);
 
 		checkCwuFiles(exportFolder, cruFilesNames, doc, btnDtac);
@@ -191,9 +194,11 @@ public class Dtac {
 
 		int i = 0;
 		for (Row row : table) {
-
-			if (row.containsValue("Mariusz Ziolkowski test prep")) {
+			//log.info(row.get("PName"));
+			//String tmp = row.get("PName").toString();
+			if (!row.get("PName").toString().contains("dtac")) {
 				doc.insertString(doc.getLength(), " found error", null);
+				
 				try {
 					table.deleteRow(row);
 				} catch (Exception e) {

@@ -1,1 +1,0 @@
-exportFolder=C:\tools\deere\Across\Dtac\Export
